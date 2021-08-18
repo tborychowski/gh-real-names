@@ -1,3 +1,5 @@
+/*global chrome */
+
 const REAL_NAME_CLS = 'real-name-replaced';
 
 const elementSelectors = [
@@ -14,6 +16,8 @@ const tooltippedSelectors = [
 const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${chars}+$)`, 'g'), '');
 const getElementsWithUserId = () => Array.from(document.querySelectorAll(elementSelectors.join(',')));
 const getTooltippedElementsWithUserId = () => Array.from(document.querySelectorAll(tooltippedSelectors.join(',')));
+const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
+const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve()));
 
 function getNameFromId (id) {
 	return fetch(`https://${window.location.hostname}/${id}`, { method: 'GET', cache: 'force-cache' })
@@ -27,9 +31,15 @@ function getNameFromId (id) {
 }
 
 async function fetchNames (ids) {
-	return Promise.all(ids.map(getNameFromId)).then(users => {
+	const cached = await readFromCache();
+	const promises = ids.map(id => {
+		if (!cached || !cached[id]) return getNameFromId(id);
+		return Promise.resolve({ id, name: cached[id] });
+	});
+	return Promise.all(promises).then(users => {
 		const map = {};
 		users.forEach(({ id, name }) => map[id] = name);
+		saveToCache(map);
 		return map;
 	});
 }
@@ -80,5 +90,4 @@ async function init () {
 	replaceIdsInElements(elems, users);
 	replaceIdsInTooltips(tooltips, users);
 }
-
 setTimeout(init, 300);
