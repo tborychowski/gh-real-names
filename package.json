@@ -1,0 +1,11 @@
+{
+  "name": "gh-real-names",
+  "description": "Replace IDs with real names on Github",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tborychowski/gh-real-names.git"
+  },
+  "author": "Tom",
+  "license": "GPL-3.0-or-later"
+}
