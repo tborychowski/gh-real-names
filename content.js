@@ -79,8 +79,7 @@ function getIdFromTooltip (elems) {
 	return ids;
 }
 
-async function init () {
-	if (!location.hostname.includes('github')) return;
+async function run () {
 	const elems = getElementsWithUserId();
 	const tooltips = getTooltippedElementsWithUserId();
 	const idsFromElements = elems.map(el => trim(el.innerText, '@'));
@@ -90,4 +89,20 @@ async function init () {
 	replaceIdsInElements(elems, users);
 	replaceIdsInTooltips(tooltips, users);
 }
+
+
+function startObserving () {
+	const targetNode = document.getElementById('js-repo-pjax-container');
+	const observer = new MutationObserver(() => {
+		requestAnimationFrame(run);
+	});
+	observer.observe(targetNode, { attributes: false, childList: true, subtree: true });
+}
+
+
+function init () {
+	if (!location.hostname.includes('github')) return;
+	startObserving();
+}
+
 setTimeout(init, 300);
