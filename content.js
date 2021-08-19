@@ -103,6 +103,7 @@ function startObserving () {
 function init () {
 	if (!location.hostname.includes('github')) return;
 	startObserving();
+	requestAnimationFrame(run);
 }
 
 setTimeout(init, 300);
