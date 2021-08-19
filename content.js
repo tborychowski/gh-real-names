@@ -23,7 +23,7 @@ function getNameFromId (id) {
 	return fetch(`https://${window.location.hostname}/${id}`, { method: 'GET', cache: 'force-cache' })
 		.then(res => res.text())
 		.then(res => {
-			const reg = new RegExp(`<title>${id} \\((.*)\\)<\\/title>`, 'g');
+			const reg = new RegExp(`<title>${id} \\((.*)\\).*<\\/title>`, 'g');
 			const match = reg.exec(res);
 			if (match) return { id, name: match[1] };
 		})
@@ -38,8 +38,8 @@ async function fetchNames (ids) {
 	});
 	return Promise.all(promises).then(users => {
 		const map = {};
-		users.forEach(({ id, name }) => map[id] = name);
-		saveToCache(map);
+		if (users && users.length) users.forEach(u => u ? map[u.id] = u.name : '');
+		if (Object.keys(map).length) saveToCache(map);
 		return map;
 	});
 }
