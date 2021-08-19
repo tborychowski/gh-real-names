@@ -7,5 +7,15 @@
     "url": "https://github.com/tborychowski/gh-real-names.git"
   },
   "author": "Tom",
-  "license": "GPL-3.0-or-later"
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "devDependencies": {
+    "chalk": "^4.1.2",
+    "detect-indent": "^7.0.0",
+    "fs-extra": "^10.0.0",
+    "inquirer": "^8.1.2",
+    "ora": "^5.4.1",
+    "semver": "^7.3.5",
+    "simple-git": "^2.44.0"
+  }
 }
