@@ -14,8 +14,6 @@ const tooltippedSelectors = [
 	`.reaction-summary-item.tooltipped:not(.${REAL_NAME_CLS})`,  // aria-label="123 reacted with..." || 123 and 234 reacted with thumbs up emoji
 ];
 const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${chars}+$)`, 'g'), '');
-const getElementsWithUserId = () => Array.from(document.querySelectorAll(elementSelectors.join(',')));
-const getTooltippedElementsWithUserId = () => Array.from(document.querySelectorAll(tooltippedSelectors.join(',')));
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
 const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve()));
 
@@ -44,6 +42,10 @@ async function fetchNames (ids) {
 	});
 }
 
+
+//*** User IDs in Elements *************************************************************************
+const getElementsWithUserId = () => Array.from(document.querySelectorAll(elementSelectors.join(',')));
+
 function replaceIdsInElements (elems, users) {
 	elems.forEach(el => {
 		const id = trim(el.innerText, '@');
@@ -54,17 +56,12 @@ function replaceIdsInElements (elems, users) {
 		}
 	});
 }
+//*** User IDs in Elements *************************************************************************
 
-function replaceIdsInTooltips (elems, users) {
-	elems.forEach(el => {
-		let label = el.getAttribute('aria-label');
-		for (let [id, name] of Object.entries(users)) {
-			if (label.includes(id)) label = label.replace(id, name);
-		}
-		el.setAttribute('aria-label', label);
-		el.classList.add(REAL_NAME_CLS);
-	});
-}
+
+
+//*** User IDs in Tooltips *************************************************************************
+const getTooltippedElementsWithUserId = () => Array.from(document.querySelectorAll(tooltippedSelectors.join(',')));
 
 function getIdFromTooltip (elems) {
 	const ids = [];
@@ -79,15 +76,63 @@ function getIdFromTooltip (elems) {
 	return ids;
 }
 
+function replaceIdsInTooltips (elems, users) {
+	elems.forEach(el => {
+		let label = el.getAttribute('aria-label');
+		for (let [id, name] of Object.entries(users)) {
+			if (label.includes(id)) label = label.replace(id, name);
+		}
+		el.setAttribute('aria-label', label);
+		el.classList.add(REAL_NAME_CLS);
+	});
+}
+//*** User IDs in Tooltips *************************************************************************
+
+
+
+//*** User IDs in Other elements *******************************************************************
+function getSpecialCases () {
+	const els = [];
+	// 123 requested your review...
+	const flash = document.querySelector('.flash-warn');
+	if (flash && flash.innerText.includes('requested your review')) {
+		const el = flash.querySelector(`.text-emphasized:not(.${REAL_NAME_CLS})`);
+		if (el) els.push(el);
+	}
+	return els;
+}
+
+function replaceIdsInSpecialCases (elems, users) {
+	elems.forEach(el => {
+		const id = trim(el.innerText.trim(), '@');
+		if (users[id]) {
+			el.innerText = el.innerText.replace(id, users[id]);
+			el.title = id;
+			el.classList.add(REAL_NAME_CLS);
+		}
+	});
+}
+//*** User IDs in Other elements *******************************************************************
+
+
+
+
+
+
 async function run () {
 	const elems = getElementsWithUserId();
 	const tooltips = getTooltippedElementsWithUserId();
+	const specialCases =  getSpecialCases();
+
 	const idsFromElements = elems.map(el => trim(el.innerText, '@'));
 	const idsFromTooltips = getIdFromTooltip(tooltips);
-	const ids = [ ...new Set([ ...idsFromElements, ...idsFromTooltips ]) ];
+	const idsFromSpecialCases = specialCases.map(el => el.innerText.trim());
+
+	const ids = [ ...new Set([ ...idsFromElements, ...idsFromTooltips, ...idsFromSpecialCases ]) ];
 	const users = await fetchNames(ids);
 	replaceIdsInElements(elems, users);
 	replaceIdsInTooltips(tooltips, users);
+	replaceIdsInSpecialCases(specialCases, users);
 }
 
 
