@@ -1,12 +1,14 @@
 /*global chrome */
 
-const REAL_NAME_CLS = 'real-name-replaced';
+const REAL_NAME_CLS = 'gh-real-names-replaced';
 
 const elementSelectors = [
 	`.repository-content .author:not(.${REAL_NAME_CLS})`,
 	`.assignee>span:not(.${REAL_NAME_CLS})`,
 	`a[data-hovercard-type="user"]>span:not(.${REAL_NAME_CLS})`,
 	`.user-mention:not(.${REAL_NAME_CLS})`,
+	`.commit-author:not(.${REAL_NAME_CLS})`,
+	`[data-hovercard-type="user"]:not(.${REAL_NAME_CLS})`,
 ];
 
 const tooltippedSelectors = [
@@ -21,7 +23,7 @@ function getNameFromId (id) {
 	return fetch(`https://${window.location.hostname}/${id}`, { method: 'GET', cache: 'force-cache' })
 		.then(res => res.text())
 		.then(res => {
-			const reg = new RegExp(`<title>${id} \\((.*)\\).*<\\/title>`, 'g');
+			const reg = new RegExp(`<title>${id} \\((.*)\\).*<\\/title>`, 'ig');
 			const match = reg.exec(res);
 			if (match) return { id, name: match[1] };
 		})
@@ -136,11 +138,11 @@ async function run () {
 }
 
 
-function startObserving () {
-	const targetNode = document.getElementById('js-repo-pjax-container');
-	const observer = new MutationObserver(() => {
-		requestAnimationFrame(run);
-	});
+function startObserving (times = 0) {
+	const targetNode = document.querySelector('#js-repo-pjax-container, .repository-content');
+	// delay 300ms & check again (up to 5 times)
+	if (!targetNode && times < 5) return setTimeout(() => startObserving(++times), 300);
+	const observer = new MutationObserver(() => requestAnimationFrame(run));
 	observer.observe(targetNode, { attributes: false, childList: true, subtree: true });
 }
 
@@ -151,4 +153,4 @@ function init () {
 	requestAnimationFrame(run);
 }
 
-setTimeout(init, 300);
+init();
