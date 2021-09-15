@@ -3,7 +3,7 @@ Replace IDs with real names on Github.
 
 ### Download
 * [Chrome store](https://chrome.google.com/webstore/detail/gh-real-names/gonnpgjkjibbcfejlldggocnkiplacif?hl=en-GB&authuser=0)
-* [Edge store](https://microsoftedge.microsoft.com/addons/detail/gh-real-names/bdfpidnedglpalkjohoojmefnhkpmfbd)
+
 
 
 ### Why `<all_urls>`?
