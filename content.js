@@ -9,13 +9,18 @@ const elementSelectors = [
 	`.user-mention:not(.${REAL_NAME_CLS})`,
 	`.commit-author:not(.${REAL_NAME_CLS})`,
 	`[data-hovercard-type="user"]:not(.${REAL_NAME_CLS})`,
+	`.js-project-issue-details-container>small>a.text-gray-dark:not(.${REAL_NAME_CLS})`, // project card
+	`.js-comment-edit-history details summary>div>span:not(.${REAL_NAME_CLS})`,	// edited by... on a comment
+	`.js-comment-edit-history-menu ul li button span.text-bold:not(.${REAL_NAME_CLS})`,	// dropdown for the above
 ];
 
 const tooltippedSelectors = [
 	`.AvatarStack-body.tooltipped:not(.${REAL_NAME_CLS})`,       // aria-label="Assigned to 123"
 	`.reaction-summary-item.tooltipped:not(.${REAL_NAME_CLS})`,  // aria-label="123 reacted with..." || 123 and 234 reacted with thumbs up emoji
 ];
+
 const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${chars}+$)`, 'g'), '');
+const cleanupString = str => trim(str, '@').replace('edited by ', '').trim();
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
 const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve()));
 
@@ -48,10 +53,14 @@ async function fetchNames (ids) {
 //*** User IDs in Elements *************************************************************************
 const getElementsWithUserId = () => Array.from(document.querySelectorAll(elementSelectors.join(',')));
 
+function getIdsFromElements (elems) {
+	return elems.map(el => cleanupString(el.innerText)).filter(id => !!id);
+}
+
 function replaceIdsInElements (elems, users) {
 	elems.forEach(el => {
-		const id = trim(el.innerText, '@');
-		if (users[id]) {
+		const id = cleanupString(el.innerText);
+		if (id && users[id]) {
 			el.innerText = el.innerText.replace(id, users[id]);
 			el.title = id;
 			el.classList.add(REAL_NAME_CLS);
@@ -70,9 +79,12 @@ function getIdFromTooltip (elems) {
 	elems.forEach(el => {
 		let label = el.getAttribute('aria-label')
 			.replace(/ reacted with [\w\s]+ emoji/gi, '')
-			.replace(/Assigned to /gi, '$2');
+			.replace(/Assigned to /gi, '');
 
-		if (label.includes(' and ')) ids.push(...label.split(' and '));
+		if (label.includes('and ') || label.includes(',')) {
+			const lblids = label.split(/and|,/g).map(i => i.trim()).filter(i => !!i);
+			ids.push(...lblids);
+		}
 		else ids.push(label);
 	});
 	return ids;
@@ -126,7 +138,7 @@ async function run () {
 	const tooltips = getTooltippedElementsWithUserId();
 	const specialCases =  getSpecialCases();
 
-	const idsFromElements = elems.map(el => trim(el.innerText, '@'));
+	const idsFromElements = getIdsFromElements(elems);
 	const idsFromTooltips = getIdFromTooltip(tooltips);
 	const idsFromSpecialCases = specialCases.map(el => el.innerText.trim());
 
