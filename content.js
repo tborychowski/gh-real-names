@@ -20,7 +20,7 @@ const tooltippedSelectors = [
 ];
 
 const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${chars}+$)`, 'g'), '');
-const cleanupString = str => trim(str, '@').replace('edited by ', '').trim();
+const cleanupString = str => trim(str, '@').replace('edited by ', '').replace('edited', '').trim();
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
 const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve()));
 
@@ -43,7 +43,11 @@ async function fetchNames (ids) {
 	});
 	return Promise.all(promises).then(users => {
 		const map = {};
-		if (users && users.length) users.forEach(u => u ? map[u.id] = u.name : '');
+		if (users && users.length) {
+			users.forEach(u => {
+				if (u && u.id !== u.name) map[u.id] = u.name;
+			});
+		}
 		if (Object.keys(map).length) saveToCache(map);
 		return map;
 	});

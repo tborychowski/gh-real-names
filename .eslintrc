@@ -16,7 +16,7 @@
 		"semi": [2, "always"],
 		"func-call-spacing": ["error", "never"],
 		"space-before-function-paren": ["error", "always"],
-		"newline-per-chained-call": ["error", { "ignoreChainWithDepth": 3 }],
+		"newline-per-chained-call": ["error", { "ignoreChainWithDepth": 5 }],
 		"no-undef": 2,
 		"no-mixed-spaces-and-tabs": 2,
 		"no-unused-vars": 1,
