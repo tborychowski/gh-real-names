@@ -12,6 +12,7 @@ const elementSelectors = [
 	`.js-project-issue-details-container>small>a.text-gray-dark:not(.${REAL_NAME_CLS})`, // project card
 	`.js-comment-edit-history details summary>div>span:not(.${REAL_NAME_CLS})`,	// edited by... on a comment
 	`.js-comment-edit-history-menu ul li button span.text-bold:not(.${REAL_NAME_CLS})`,	// dropdown for the above
+	`.repository-content .col-md-3 .list-style-none a strong:not(.${REAL_NAME_CLS})`,	// "contributors" on repo home
 ];
 
 const tooltippedSelectors = [
