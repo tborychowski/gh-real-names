@@ -1,6 +1,6 @@
 {
 	"manifest_version": 3,
-	"version": "1.1.7",
+	"version": "1.1.8",
 	"name": "GH Real Names",
 	"author": "Tom",
 	"description": "Replace IDs with real names on Github",
