@@ -8,7 +8,7 @@ const elementSelectors = [
 	`a[data-hovercard-type="user"]>span:not(.${REAL_NAME_CLS})`,
 	`.user-mention:not(.${REAL_NAME_CLS})`,
 	`.commit-author:not(.${REAL_NAME_CLS})`,
-	`[data-hovercard-type="user"]:not(.${REAL_NAME_CLS})`,
+	`a[data-hovercard-type="user"]:not(.${REAL_NAME_CLS})`,
 	`.js-project-issue-details-container>small>a.text-gray-dark:not(.${REAL_NAME_CLS})`, // project card
 	`.js-comment-edit-history details summary>div>span:not(.${REAL_NAME_CLS})`,	// edited by... on a comment
 	`.js-comment-edit-history-menu ul li button span.text-bold:not(.${REAL_NAME_CLS})`,	// dropdown for the above
