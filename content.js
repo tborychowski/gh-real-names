@@ -59,7 +59,12 @@ async function fetchNames (ids) {
 const getElementsWithUserId = () => Array.from(document.querySelectorAll(elementSelectors.join(',')));
 
 function getIdsFromElements (elems) {
-	return elems.map(el => cleanupString(el.innerText)).filter(id => !!id);
+	return elems
+		.map(el => {
+			if (el.tagName === 'A') return el.getAttribute('href').substring(1);
+			return cleanupString(el.innerText);
+		})
+		.filter(id => !!id);
 }
 
 function replaceIdsInElements (elems, users) {
@@ -156,11 +161,13 @@ async function run () {
 
 
 function startObserving (times = 0) {
-	const targetNode = document.querySelector('#js-repo-pjax-container, .repository-content');
+	const targetNode = document.querySelector('#js-repo-pjax-container, .repository-content, .application-main');
 	// delay 300ms & check again (up to 5 times)
 	if (!targetNode && times < 5) return setTimeout(() => startObserving(++times), 300);
 	const observer = new MutationObserver(() => requestAnimationFrame(run));
-	observer.observe(targetNode, { attributes: false, childList: true, subtree: true });
+	if (targetNode instanceof Node) {
+		observer.observe(targetNode, { attributes: false, childList: true, subtree: true });
+	}
 }
 
 
