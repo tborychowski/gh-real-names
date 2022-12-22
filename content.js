@@ -3,25 +3,26 @@
 const REAL_NAME_CLS = 'gh-real-names-replaced';
 
 const elementSelectors = [
-	`.repository-content .author:not(.${REAL_NAME_CLS})`,
-	`.assignee>span:not(.${REAL_NAME_CLS})`,
-	`a[data-hovercard-type="user"]>span:not(.${REAL_NAME_CLS})`,
-	`.user-mention:not(.${REAL_NAME_CLS})`,
-	`.commit-author:not(.${REAL_NAME_CLS})`,
-	`a[data-hovercard-type="user"]:not(.${REAL_NAME_CLS})`,
-	`.js-project-issue-details-container>small>a.text-gray-dark:not(.${REAL_NAME_CLS})`, // project card
-	`.js-comment-edit-history details summary>div>span:not(.${REAL_NAME_CLS})`,	// edited by... on a comment
-	`.js-comment-edit-history-menu ul li button span.text-bold:not(.${REAL_NAME_CLS})`,	// dropdown for the above
-	`.repository-content .col-md-3 .list-style-none a strong:not(.${REAL_NAME_CLS})`,	// "contributors" on repo home
+	'.repository-content .author',
+	'.assignee>span',
+	'a[data-hovercard-type="user"]>span',
+	'a[data-hovercard-type="user"]',
+	'.user-mention',
+	'.commit-author',
+	'.js-project-issue-details-container>small>a.text-gray-dark', // project card
+	'.js-comment-edit-history details summary>div>span',	// edited by... on a comment
+	'.js-comment-edit-history-menu ul li button span.text-bold',	// dropdown for the above
+	'.repository-content .col-md-3 .list-style-none a strong',	// "contributors" on repo home
 ];
 
 const tooltippedSelectors = [
-	`.AvatarStack-body.tooltipped:not(.${REAL_NAME_CLS})`,       // aria-label="Assigned to 123"
-	`.reaction-summary-item.tooltipped:not(.${REAL_NAME_CLS})`,  // aria-label="123 reacted with..." || 123 and 234 reacted with thumbs up emoji
+	'.AvatarStack-body.tooltipped',       // aria-label="Assigned to 123"
+	'.reaction-summary-item.tooltipped',  // aria-label="123 reacted with..." || 123 and 234 reacted with thumbs up emoji
 ];
 
 const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${chars}+$)`, 'g'), '');
 const cleanupString = str => trim(str, '@').replace('edited by ', '').replace('edited', '').trim();
+const cleanupHovercard = str => str.replace('/users/', '').replace('/hovercard', '');
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
 const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve()));
 
@@ -56,11 +57,15 @@ async function fetchNames (ids) {
 
 
 //*** User IDs in Elements *************************************************************************
-const getElementsWithUserId = () => Array.from(document.querySelectorAll(elementSelectors.join(',')));
+function getElementsWithUserId () {
+	const selectors = elementSelectors.map(s => s + `:not(.${REAL_NAME_CLS})`).join(',');
+	return Array.from(document.querySelectorAll(selectors));
+}
 
 function getIdsFromElements (elems) {
 	return elems
 		.map(el => {
+			if (el.dataset && el.dataset.hovercardUrl) return cleanupHovercard(el.dataset.hovercardUrl);
 			if (el.tagName === 'A') return el.getAttribute('href').substring(1);
 			return cleanupString(el.innerText);
 		})
@@ -82,7 +87,10 @@ function replaceIdsInElements (elems, users) {
 
 
 //*** User IDs in Tooltips *************************************************************************
-const getTooltippedElementsWithUserId = () => Array.from(document.querySelectorAll(tooltippedSelectors.join(',')));
+function getTooltippedElementsWithUserId () {
+	const selectors = tooltippedSelectors.map(s => s + `:not(.${REAL_NAME_CLS})`).join(',');
+	return Array.from(document.querySelectorAll(selectors));
+}
 
 function getIdFromTooltip (elems) {
 	const ids = [];
