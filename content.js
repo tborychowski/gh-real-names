@@ -13,6 +13,7 @@ const elementSelectors = [
 	'.js-comment-edit-history details summary>div>span',	// edited by... on a comment
 	'.js-comment-edit-history-menu ul li button span.text-bold',	// dropdown for the above
 	'.repository-content .col-md-3 .list-style-none a strong',	// "contributors" on repo home
+	'.js-merge-review-section .review-status-item strong',	// "contributors" on repo home
 ];
 
 const tooltippedSelectors = [
@@ -174,7 +175,7 @@ function startObserving (times = 0) {
 	if (!targetNode && times < 5) return setTimeout(() => startObserving(++times), 300);
 	const observer = new MutationObserver(() => requestAnimationFrame(run));
 	if (targetNode instanceof Node) {
-		observer.observe(targetNode, { attributes: false, childList: true, subtree: true });
+		observer.observe(targetNode, { attributes: true, childList: true, subtree: true });
 	}
 }
 
