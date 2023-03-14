@@ -14,6 +14,7 @@ const elementSelectors = [
 	'.js-comment-edit-history-menu ul li button span.text-bold',	// dropdown for the above
 	'.repository-content .col-md-3 .list-style-none a strong',	// "contributors" on repo home
 	'.js-merge-review-section .review-status-item strong',	// "contributors" on repo home
+	'tool-tip[for^="reactions"]',	// reaction emoji tooltip
 ];
 
 const tooltippedSelectors = [
@@ -22,10 +23,20 @@ const tooltippedSelectors = [
 ];
 
 const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${chars}+$)`, 'g'), '');
-const cleanupString = str => trim(str, '@').replace('edited by ', '').replace('edited', '').trim();
 const cleanupHovercard = str => str.replace('/users/', '').replace('/hovercard', '');
+// @ts-ignore
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
-const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve()));
+// @ts-ignore
+const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve(0)));
+
+function cleanupString (str) {
+	return trim(str, '@')
+		.replace('edited by ', '')
+		.replace('edited', '')
+		.replace(/reacted with ([a-z ])+ emoji/i, '')
+		.trim();
+}
+
 
 function getNameFromId (id) {
 	return fetch(`https://${window.location.hostname}/${id}`, { method: 'GET', cache: 'force-cache' })
@@ -64,23 +75,37 @@ function getElementsWithUserId () {
 }
 
 function getIdsFromElements (elems) {
-	return elems
-		.map(el => {
-			if (el.dataset && el.dataset.hovercardUrl) return cleanupHovercard(el.dataset.hovercardUrl);
-			if (el.tagName === 'A') return el.getAttribute('href').substring(1);
-			return cleanupString(el.innerText);
-		})
-		.filter(id => !!id);
+	const ids = [];
+	elems.forEach(el => {
+		if (el.dataset && el.dataset.hovercardUrl) {
+			ids.push(cleanupHovercard(el.dataset.hovercardUrl));
+		}
+		else if (el.tagName === 'A') {
+			ids.push(el.getAttribute('href').substring(1));
+		}
+		else {
+			const str = cleanupString(el.innerText);
+			if (str.includes('and ') || str.includes(',')) {
+				const strids = str.split(/and|,/g).map(i => i.trim()).filter(i => !!i);
+				ids.push(...strids);
+			}
+			else ids.push(str);
+		}
+	});
+	return [...new Set(ids.filter(id => !!id))];
 }
 
 function replaceIdsInElements (elems, users) {
 	elems.forEach(el => {
-		const id = cleanupString(el.innerText);
-		if (id && users[id]) {
-			el.innerText = el.innerText.replace(id, users[id]);
+		let txt = el.innerText;
+		if (!txt) return;
+		for (let [id, name] of Object.entries(users)) {
+			if (txt.includes(id)) txt = txt.replace(id, name);
 			el.title = id;
-			el.classList.add(REAL_NAME_CLS);
 		}
+		el.innerText = txt;
+		el.style.maxWidth = 'unset';
+		el.classList.add(REAL_NAME_CLS);
 	});
 }
 //*** User IDs in Elements *************************************************************************
@@ -128,6 +153,7 @@ function getSpecialCases () {
 	const els = [];
 	// 123 requested your review...
 	const flash = document.querySelector('.flash-warn');
+	// @ts-ignore
 	if (flash && flash.innerText.includes('requested your review')) {
 		const el = flash.querySelector(`.text-emphasized:not(.${REAL_NAME_CLS})`);
 		if (el) els.push(el);
@@ -152,13 +178,14 @@ function replaceIdsInSpecialCases (elems, users) {
 
 
 
-async function run () {
+async function _run () {
 	const elems = getElementsWithUserId();
 	const tooltips = getTooltippedElementsWithUserId();
 	const specialCases =  getSpecialCases();
 
 	const idsFromElements = getIdsFromElements(elems);
 	const idsFromTooltips = getIdFromTooltip(tooltips);
+	// @ts-ignore
 	const idsFromSpecialCases = specialCases.map(el => el.innerText.trim());
 
 	const ids = [ ...new Set([ ...idsFromElements, ...idsFromTooltips, ...idsFromSpecialCases ]) ];
@@ -168,11 +195,15 @@ async function run () {
 	replaceIdsInSpecialCases(specialCases, users);
 }
 
+let timer;
+function run () {
+	clearTimeout(timer);
+	timer = setTimeout(_run, 300);
+}
 
-function startObserving (times = 0) {
-	const targetNode = document.querySelector('#js-repo-pjax-container, .repository-content, .application-main');
-	// delay 300ms & check again (up to 5 times)
-	if (!targetNode && times < 5) return setTimeout(() => startObserving(++times), 300);
+
+function startObserving () {
+	const targetNode = document.body;
 	const observer = new MutationObserver(() => requestAnimationFrame(run));
 	if (targetNode instanceof Node) {
 		observer.observe(targetNode, { attributes: true, childList: true, subtree: true });
@@ -180,9 +211,15 @@ function startObserving (times = 0) {
 }
 
 
+function onUrlChange () {
+	window.onpopstate = () => setTimeout(run, 500);
+}
+
+
 function init () {
 	if (!location.hostname.includes('github')) return;
 	startObserving();
+	onUrlChange();
 	requestAnimationFrame(run);
 }
 
