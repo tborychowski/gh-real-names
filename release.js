@@ -128,6 +128,7 @@ function release () {
 				`mkdir ~/Desktop/${app.name} && ` +
 				`cp content.js ~/Desktop/${app.name} && ` +
 				`cp LICENSE ~/Desktop/${app.name} && ` +
+				`cp manifest.json ~/Desktop/${app.name}` +
 
 				// zip for firefox
 				`7zz a ~/Desktop/${app.name}-firefox.zip ~/Desktop/${app.name}/* && ` +
