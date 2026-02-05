@@ -18,13 +18,14 @@ const cwd = process.cwd();
 const manifests = ['package.json', 'manifest.json'];
 const addonUrl = 'https://addons.mozilla.org/en-US/developers/addon/perfect-home/versions';
 const chromeStoreDash = 'https://chrome.google.com/webstore/devconsole';
+
 const dryrun = false;
 
 
-const faker = () => new Promise(resolve => setTimeout(resolve, 200));
+const faker = () => new Promise(resolve => setTimeout(resolve, 100));
 
 function run (cmd) {
-	if (dryrun) return faker();
+	// if (dryrun) return faker();
 	return new Promise((resolve, reject) => {
 		exec(cmd, (err, out) => (err ? reject(err) : resolve(out)));
 	});
@@ -128,7 +129,7 @@ function release () {
 				`mkdir ~/Desktop/${app.name} && ` +
 				`cp content.js ~/Desktop/${app.name} && ` +
 				`cp LICENSE ~/Desktop/${app.name} && ` +
-				`cp manifest.json ~/Desktop/${app.name}` +
+				`cp manifest.json ~/Desktop/${app.name} && ` +
 
 				// zip for firefox
 				`7zz a ~/Desktop/${app.name}-firefox.zip ~/Desktop/${app.name}/* && ` +
