@@ -127,6 +127,8 @@ function release () {
 
 			const cmd = `rm -rf ~/Desktop/${app.name} && ` +
 				`mkdir ~/Desktop/${app.name} && ` +
+				`cp -R assets ~/Desktop/${app.name} && ` +
+				`rm ~/Desktop/${app.name}/assets/icon.sketch && ` +
 				`cp content.js ~/Desktop/${app.name} && ` +
 				`cp LICENSE ~/Desktop/${app.name} && ` +
 				`cp manifest.json ~/Desktop/${app.name} && ` +
@@ -146,10 +148,7 @@ function release () {
 			spinner.text = 'Zipping source for Firefox submission.';
 			spinner.start();
 
-			const cmd =
-				`cp -R assets ~/Desktop/${app.name} && ` +
-				`rm ~/Desktop/${app.name}/assets/icon.sketch && ` +
-				`cp package.json ~/Desktop/${app.name} && ` +
+			const cmd = `cp package.json ~/Desktop/${app.name} && ` +
 				`cp README.md ~/Desktop/${app.name} && ` +
 				`7zz a ~/Desktop/${app.name}-source.zip ~/Desktop/${app.name}/ && ` +
 				`rm -rf ~/Desktop/${app.name}`;
