@@ -133,7 +133,7 @@ function release () {
 				`7zz a ~/Desktop/${app.name}-firefox.zip ~/Desktop/${app.name}/* && ` +
 
 				// zip for chrome
-				`7zz a ~/Desktop/${app.name}-chrome.zip ~/Desktop/${app.name}/ && `;
+				`7zz a ~/Desktop/${app.name}-chrome.zip ~/Desktop/${app.name}/`;
 
 			return run(cmd).catch(() => {});
 		})
@@ -145,7 +145,8 @@ function release () {
 			spinner.start();
 
 			const cmd =
-				`cp -R assets/ ~/Desktop/${app.name} && ` +
+				`cp -R assets ~/Desktop/${app.name} && ` +
+				`rm ~/Desktop/${app.name}/assets/icon.sketch && ` +
 				`cp package.json ~/Desktop/${app.name} && ` +
 				`cp README.md ~/Desktop/${app.name} && ` +
 				`7zz a ~/Desktop/${app.name}-source.zip ~/Desktop/${app.name}/ && ` +
