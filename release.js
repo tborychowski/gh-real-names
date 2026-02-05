@@ -8,15 +8,20 @@ import ora from 'ora';
 import chalk from 'chalk';
 import indent from 'detect-indent';
 import inquirer from 'inquirer';
+import open from 'open';
 import Git from 'simple-git';
+
 
 const git = Git();
 const cwd = process.cwd();
-const manifests = [ 'package.json', 'manifest.json' ];
+
+const manifests = ['package.json', 'manifest.json'];
+const addonUrl = 'https://addons.mozilla.org/en-US/developers/addon/perfect-home/versions';
+const chromeStoreDash = 'https://chrome.google.com/webstore/devconsole';
 const dryrun = false;
 
 
-const faker = () => new Promise(resolve => setTimeout(resolve, 2000));
+const faker = () => new Promise(resolve => setTimeout(resolve, 200));
 
 function run (cmd) {
 	if (dryrun) return faker();
@@ -54,7 +59,6 @@ function commit (version) {
 	if (dryrun) return faker();
 	return new Promise((resolve, reject) => {
 		git
-			.silent(true)
 			.add('./*')
 			.commit('Release v' + version)
 			.push(['origin', 'master'], err => {
@@ -81,7 +85,7 @@ function release () {
 				message: 'Bump version to:',
 				default: 1,
 				choices: [
-					{ value: app.current,   name: 'current (' + app.current + ')' },
+					{ value: app.current, name: 'current (' + app.current + ')' },
 					{ value: app.nextPatch, name: 'patch   (' + app.nextPatch + ')' },
 					{ value: app.nextMinor, name: 'minor   (' + app.nextMinor + ')' },
 					{ value: app.nextMajor, name: 'major   (' + app.nextMajor + ')' },
@@ -99,7 +103,8 @@ function release () {
 				validate: answer => semver.valid(answer) ? true : 'That\'s not a valid version number',
 			}
 		])
-		.then(({version}) => {
+		.then(({ version }) => {
+			app.version = version;
 			spinner = ora('').start();
 			// update package & manifest
 			manifests.forEach(m => {
@@ -116,20 +121,37 @@ function release () {
 			spinner.text = `Update ${chalk.cyan('pushed')} to Github.`;
 			spinner.succeed();
 
-			spinner.text = 'Zipping source...';
+			spinner.text = 'Packing extensions...';
 			spinner.start();
 
-			const cmd = `mkdir ~/Desktop/${app.name} && ` +
-				`cp -R assets ~/Desktop/${app.name} && ` +
-				`cp *.* ~/Desktop/${app.name} && ` +
+			const cmd = `rm -rf ~/Desktop/${app.name} && ` +
+				`mkdir ~/Desktop/${app.name} && ` +
+				`cp content.js ~/Desktop/${app.name} && ` +
 				`cp LICENSE ~/Desktop/${app.name} && ` +
-				`rm ~/Desktop/${app.name}/assets/*.sketch && ` +
-				`rm ~/Desktop/${app.name}/assets/screen*.* && ` +
-				`rm ~/Desktop/${app.name}/package*.json && ` +
-				`rm ~/Desktop/${app.name}/release.js && ` +
 
-				`7z a ~/Desktop/${app.name}.zip ~/Desktop/${app.name}/ > /dev/null && ` +
+				// zip for firefox
+				`7zz a ~/Desktop/${app.name}-firefox.zip ~/Desktop/${app.name}/* && ` +
+
+				// zip for chrome
+				`7zz a ~/Desktop/${app.name}-chrome.zip ~/Desktop/${app.name}/ && ` +
+
 				`rm -rf ~/Desktop/${app.name}`;
+
+			return run(cmd).catch(() => {});
+		})
+		.then(() => {
+			spinner.text = 'Extensions packed.';
+			spinner.succeed();
+
+			spinner.text = 'Zipping source for Firefox submission.';
+			spinner.start();
+
+			const cmd = `rm -rf ~/Desktop/${app.name} && ` +
+				`mkdir ~/Desktop/${app.name} && ` +
+				`cp -R ./ ~/Desktop/${app.name}/ && ` +
+				`7zz a ~/Desktop/${app.name}-source.zip ~/Desktop/${app.name}/ && ` +
+				`rm -rf ~/Desktop/${app.name}`;
+
 			return run(cmd).catch(() => {});
 		})
 		.then(() => {
@@ -137,6 +159,8 @@ function release () {
 			spinner.succeed();
 
 			console.log(chalk.cyan('All done!'));
+			if (!dryrun) open(addonUrl);
+			if (!dryrun) open(chromeStoreDash);
 			process.exit(0);
 		})
 		.catch(e => {
