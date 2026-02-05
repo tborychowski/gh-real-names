@@ -25,7 +25,7 @@ const dryrun = false;
 const faker = () => new Promise(resolve => setTimeout(resolve, 100));
 
 function run (cmd) {
-	// if (dryrun) return faker();
+	if (dryrun) return faker();
 	return new Promise((resolve, reject) => {
 		exec(cmd, (err, out) => (err ? reject(err) : resolve(out)));
 	});
@@ -132,6 +132,8 @@ function release () {
 				`cp content.js ~/Desktop/${app.name} && ` +
 				`cp LICENSE ~/Desktop/${app.name} && ` +
 				`cp manifest.json ~/Desktop/${app.name} && ` +
+				`cp package.json ~/Desktop/${app.name} && ` +
+				`cp README.md ~/Desktop/${app.name} && ` +
 
 				// zip for firefox
 				`7zz a ~/Desktop/${app.name}-firefox.zip ~/Desktop/${app.name}/* && ` +
@@ -143,20 +145,6 @@ function release () {
 		})
 		.then(() => {
 			spinner.text = 'Extensions packed.';
-			spinner.succeed();
-
-			spinner.text = 'Zipping source for Firefox submission.';
-			spinner.start();
-
-			const cmd = `cp package.json ~/Desktop/${app.name} && ` +
-				`cp README.md ~/Desktop/${app.name} && ` +
-				`7zz a ~/Desktop/${app.name}-source.zip ~/Desktop/${app.name}/ && ` +
-				`rm -rf ~/Desktop/${app.name}`;
-
-			return run(cmd).catch(() => {});
-		})
-		.then(() => {
-			spinner.text = 'Source zipped to ' + chalk.cyan('Desktop') + '!';
 			spinner.succeed();
 
 			console.log(chalk.cyan('All done!'));
