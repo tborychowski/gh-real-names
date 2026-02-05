@@ -133,9 +133,7 @@ function release () {
 				`7zz a ~/Desktop/${app.name}-firefox.zip ~/Desktop/${app.name}/* && ` +
 
 				// zip for chrome
-				`7zz a ~/Desktop/${app.name}-chrome.zip ~/Desktop/${app.name}/ && ` +
-
-				`rm -rf ~/Desktop/${app.name}`;
+				`7zz a ~/Desktop/${app.name}-chrome.zip ~/Desktop/${app.name}/ && `;
 
 			return run(cmd).catch(() => {});
 		})
@@ -146,9 +144,10 @@ function release () {
 			spinner.text = 'Zipping source for Firefox submission.';
 			spinner.start();
 
-			const cmd = `rm -rf ~/Desktop/${app.name} && ` +
-				`mkdir ~/Desktop/${app.name} && ` +
-				`cp -R ./ ~/Desktop/${app.name}/ && ` +
+			const cmd =
+				`cp -R assets/ ~/Desktop/${app.name} && ` +
+				`cp package.json ~/Desktop/${app.name} && ` +
+				`cp README.md ~/Desktop/${app.name} && ` +
 				`7zz a ~/Desktop/${app.name}-source.zip ~/Desktop/${app.name}/ && ` +
 				`rm -rf ~/Desktop/${app.name}`;
 
