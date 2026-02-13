@@ -175,6 +175,40 @@ function replaceIdsInSpecialCases (elems, users) {
 
 
 
+//*** User IDs are in random-selector-elements *****************************************************
+const findParentWithText = (node) => node.innerText ? node : findParentWithText(node.parentElement);
+const isId = (txt) => ('' + txt).replace(/[^a-z0-9]/gi, '').length > 2;
+
+function findTextElements (root) {
+	const result = [], stack = [root];
+	while (stack.length) {
+		const node = stack.pop();
+		if (!node || node.nodeType !== Node.ELEMENT_NODE) continue;
+		const children = node.children;
+		if (children.length === 0) {
+			const text = node.textContent?.trim() ?? '';
+			if (text.length > 0) result.push(node);
+			continue;
+		}
+		for (let i = children.length - 1; i >= 0; i--) stack.push(children[i]);
+	}
+	return result;
+}
+
+function getRandomisedSelectors () {
+	const avatars = document.querySelectorAll('[data-testid="github-avatar"]');
+	const els = [];
+	avatars.forEach(a => {
+		const parent = findParentWithText(a);
+		const textNodes = findTextElements(parent).filter(n => isId(n.innerText));
+		els.push(...textNodes);
+	});
+	return els.filter(el => !el.classList.contains(REAL_NAME_CLS));
+}
+//*** User IDs are in random-selector-elements *****************************************************
+
+
+
 
 
 
@@ -182,17 +216,21 @@ async function _run () {
 	const elems = getElementsWithUserId();
 	const tooltips = getTooltippedElementsWithUserId();
 	const specialCases =  getSpecialCases();
+	const randomisedSelectors =  getRandomisedSelectors();
 
 	const idsFromElements = getIdsFromElements(elems);
 	const idsFromTooltips = getIdFromTooltip(tooltips);
 	// @ts-ignore
 	const idsFromSpecialCases = specialCases.map(el => el.innerText.trim());
+	const idsFromRandomised = getIdsFromElements(randomisedSelectors);
 
-	const ids = [ ...new Set([ ...idsFromElements, ...idsFromTooltips, ...idsFromSpecialCases ]) ];
+	const ids = [ ...new Set([ ...idsFromElements, ...idsFromTooltips, ...idsFromSpecialCases, ...idsFromRandomised ]) ];
 	const users = await fetchNames(ids);
+
 	replaceIdsInElements(elems, users);
 	replaceIdsInTooltips(tooltips, users);
 	replaceIdsInSpecialCases(specialCases, users);
+	replaceIdsInElements(randomisedSelectors, users);
 }
 
 let timer;

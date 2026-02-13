@@ -10,9 +10,10 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "ext:start": "web-ext run --no-reload -s . -p test-profile --keep-profile-changes",
-    "ext:lint": "web-ext lint -s .",
-    "ext:build": "web-ext build --overwrite-dest -s ."
+    "startOnce": "web-ext run --no-reload -s . -p test-profile --keep-profile-changes",
+    "start": "web-ext run -s . -p test-profile --keep-profile-changes",
+    "lint": "web-ext lint -s .",
+    "build": "web-ext build --overwrite-dest -s ."
   },
   "webExt": {
     "sourceDir": ".",
