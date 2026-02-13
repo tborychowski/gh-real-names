@@ -3,7 +3,7 @@ Replace IDs with real names on Github.
 
 ### Download
 * [Chrome store](https://chrome.google.com/webstore/detail/gh-real-names/gonnpgjkjibbcfejlldggocnkiplacif?hl=en-GB&authuser=0)
-* [Mozilla Addons](#) - coming soon!
+* [Mozilla Addons](https://addons.mozilla.org/en-US/firefox/addon/gh-real-names/)
 
 
 
