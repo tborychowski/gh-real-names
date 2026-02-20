@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*global chrome */
 
 const REAL_NAME_CLS = 'gh-real-names-replaced';
@@ -24,10 +25,8 @@ const tooltippedSelectors = [
 
 const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${chars}+$)`, 'g'), '');
 const cleanupHovercard = str => str.replace('/users/', '').replace('/hovercard', '');
-// @ts-ignore
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
-// @ts-ignore
-const saveToCache = async (users) =>new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve(0)));
+const saveToCache = async (users) => new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve(0)));
 
 function cleanupString (str) {
 	return trim(str, '@')
@@ -37,16 +36,40 @@ function cleanupString (str) {
 		.trim();
 }
 
+function parseUserPageTitle (res, id) {
+	let name = '';
+	let match = new RegExp(`<title>${id}( \\((.*)\\))?.*<\\/title>`, 'ig').exec(res);
+	if (match && match.at(2)) name = match.at(2);
+	else if (match && match[0]) name = match[0].replace('<title>', '').replace('</title>', '');
+	else name = id;
+	return name.replace(/github/ig, '').replace(/·/ig, '').trim();
+}
 
+// handle code 429 - Too Many Requests
+// handle code 404 - user not found (maybe deleted account?)
+let reqLimit = false;
+const REQ_LIMIT_TIMEOUT = 1000 * 30;
 function getNameFromId (id) {
+	if (reqLimit) return Promise.resolve(null);
+
 	return fetch(`https://${window.location.hostname}/${id}`, { method: 'GET', cache: 'force-cache' })
-		.then(res => res.text())
 		.then(res => {
-			const reg = new RegExp(`<title>${id} \\((.*)\\).*<\\/title>`, 'ig');
-			const match = reg.exec(res);
-			if (match) return { id, name: match[1] };
+			if (res.status === 429) {
+				reqLimit = true;
+				setTimeout(() => reqLimit = false, REQ_LIMIT_TIMEOUT);
+				console.warn('GitHub is rate limiting requests, caching results and trying again later');
+				return null;
+			}
+			if (res.status === 404) return { id, name: id };
+			if (!res.ok) throw new Error();
+			return res.text();
 		})
-		.catch(() => console.error(`Could not get user ${id}`));
+		.then(res => {
+			if (res.id && res.name) return res;
+			const name = parseUserPageTitle(res, id);
+			if (name) return { id, name };
+		})
+		.catch(() => console.warn(`Could not get user ${id}`));
 }
 
 async function fetchNames (ids) {
@@ -57,13 +80,16 @@ async function fetchNames (ids) {
 	});
 	return Promise.all(promises).then(users => {
 		const map = {};
-		if (users && users.length) {
-			users.forEach(u => {
-				if (u && u.id !== u.name) map[u.id] = u.name;
-			});
+		if (Array.isArray(users)) {
+			users
+				.filter(u => !!u)
+				.forEach(u => {
+					if (u) map[u.id] = u.name;
+				});
 		}
-		if (Object.keys(map).length) saveToCache(map);
-		return map;
+		if (!Object.keys(map).length) return map;
+		const all = { ...cached, ...map };
+		return saveToCache(all).then(() => all);
 	});
 }
 
@@ -153,7 +179,6 @@ function getSpecialCases () {
 	const els = [];
 	// 123 requested your review...
 	const flash = document.querySelector('.flash-warn');
-	// @ts-ignore
 	if (flash && flash.innerText.includes('requested your review')) {
 		const el = flash.querySelector(`.text-emphasized:not(.${REAL_NAME_CLS})`);
 		if (el) els.push(el);
@@ -176,7 +201,16 @@ function replaceIdsInSpecialCases (elems, users) {
 
 
 //*** User IDs are in random-selector-elements *****************************************************
-const findParentWithText = (node) => node.innerText ? node : findParentWithText(node.parentElement);
+const MAX_LEVELS_UP = 4;
+function findParentWithText (node, levels = 0) {
+	if (!node) return null;
+	if (levels > MAX_LEVELS_UP) return null;
+	// don't check for these - they have already been handled by regular selectors
+	if (node.matches('a[data-hovercard-type="user"]')) return null;
+	if (node.matches('body')) return node;
+	return node.innerText ? node : findParentWithText(node.parentElement, levels + 1);
+}
+
 const isId = (txt) => ('' + txt).replace(/[^a-z0-9]/gi, '').length > 2;
 
 function findTextElements (root) {
@@ -220,11 +254,11 @@ async function _run () {
 
 	const idsFromElements = getIdsFromElements(elems);
 	const idsFromTooltips = getIdFromTooltip(tooltips);
-	// @ts-ignore
 	const idsFromSpecialCases = specialCases.map(el => el.innerText.trim());
 	const idsFromRandomised = getIdsFromElements(randomisedSelectors);
 
-	const ids = [ ...new Set([ ...idsFromElements, ...idsFromTooltips, ...idsFromSpecialCases, ...idsFromRandomised ]) ];
+	const ids = [...new Set([...idsFromElements, ...idsFromTooltips, ...idsFromSpecialCases, ...idsFromRandomised])];
+
 	const users = await fetchNames(ids);
 
 	replaceIdsInElements(elems, users);

@@ -16,7 +16,7 @@ const git = Git();
 const cwd = process.cwd();
 
 const manifests = ['package.json', 'manifest.json'];
-const addonUrl = 'https://addons.mozilla.org/en-US/developers/addon/perfect-home/versions';
+const addonUrl = 'https://addons.mozilla.org/en-US/developers/addon/gh-real-names/versions/submit/';
 const chromeStoreDash = 'https://chrome.google.com/webstore/devconsole';
 
 const dryrun = false;
