@@ -130,6 +130,8 @@ function release () {
 				`cp -R assets ~/Desktop/${app.name} && ` +
 				`rm ~/Desktop/${app.name}/assets/icon.sketch && ` +
 				`cp content.js ~/Desktop/${app.name} && ` +
+				`cp popup.js ~/Desktop/${app.name} && ` +
+				`cp popup.html ~/Desktop/${app.name} && ` +
 				`cp LICENSE ~/Desktop/${app.name} && ` +
 				`cp manifest.json ~/Desktop/${app.name} && ` +
 				`cp package.json ~/Desktop/${app.name} && ` +
