@@ -8,6 +8,7 @@ const elementSelectors = [
 	'.assignee>span',
 	'a[data-hovercard-type="user"]>span',
 	'a[data-hovercard-type="user"]',
+	'[data-testid="issue-body-header-author"]',
 	'.user-mention',
 	'.commit-author',
 	'.js-project-issue-details-container>small>a.text-gray-dark', // project card
@@ -27,6 +28,7 @@ const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${cha
 const cleanupHovercard = str => str.replace('/users/', '').replace('/hovercard', '');
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
 const saveToCache = async (users) => new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve(0)));
+const clearCache = async () => new Promise(resolve => chrome.storage.local.set({ users: {} }, () => resolve(0)));
 
 function cleanupString (str) {
 	return trim(str, '@')
@@ -201,13 +203,17 @@ function replaceIdsInSpecialCases (elems, users) {
 
 
 //*** User IDs are in random-selector-elements *****************************************************
-const MAX_LEVELS_UP = 4;
+const MAX_LEVELS_UP = 3;
+const APP_ROOT = '.application-main';
+const MAX_BOUNDARY_CONTAINER = 'a, button, li, .issue-viewer-issue-container';
+
 function findParentWithText (node, levels = 0) {
 	if (!node) return null;
 	if (levels > MAX_LEVELS_UP) return null;
 	// don't check for these - they have already been handled by regular selectors
 	if (node.matches('a[data-hovercard-type="user"]')) return null;
-	if (node.matches('body')) return node;
+	if (node.matches(MAX_BOUNDARY_CONTAINER)) return null;
+	if (node.matches(APP_ROOT)) return null;
 	return node.innerText ? node : findParentWithText(node.parentElement, levels + 1);
 }
 
@@ -230,10 +236,11 @@ function findTextElements (root) {
 }
 
 function getRandomisedSelectors () {
-	const avatars = document.querySelectorAll('[data-testid="github-avatar"]');
+	const avatars = document.querySelectorAll(`${APP_ROOT} [data-testid="github-avatar"]`);
 	const els = [];
 	avatars.forEach(a => {
 		const parent = findParentWithText(a);
+		if (!parent) return;
 		const textNodes = findTextElements(parent).filter(n => isId(n.innerText));
 		els.push(...textNodes);
 	});
