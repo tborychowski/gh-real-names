@@ -7,6 +7,13 @@
 	"permissions": [
 		"storage"
 	],
+	"action": {
+		"default_popup": "popup.html",
+		"default_icon": {
+			"48": "assets/icon48.png",
+			"96": "assets/icon96.png"
+		}
+	},
 	"content_scripts": [
 		{
 			"matches": [

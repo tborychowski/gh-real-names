@@ -28,7 +28,6 @@ const trim = (str, chars = '\\s') => str.replace(new RegExp(`(^${chars}+)|(${cha
 const cleanupHovercard = str => str.replace('/users/', '').replace('/hovercard', '');
 const readFromCache = async () => new Promise(resolve => chrome.storage.local.get(['users'], res => resolve(res.users)));
 const saveToCache = async (users) => new Promise(resolve => chrome.storage.local.set({ users: users }, () => resolve(0)));
-const clearCache = async () => new Promise(resolve => chrome.storage.local.set({ users: {} }, () => resolve(0)));
 
 function cleanupString (str) {
 	return trim(str, '@')
