@@ -6,6 +6,7 @@ const REAL_NAME_CLS = 'gh-real-names-replaced';
 const elementSelectors = [
 	'.repository-content .author',
 	'.assignee>span',
+	'[data-testid="issue-assignees"]',
 	'a[data-hovercard-type="user"]>span',
 	'a[data-hovercard-type="user"]',
 	'[data-testid="issue-body-header-author"]',
@@ -98,7 +99,15 @@ async function fetchNames (ids) {
 //*** User IDs in Elements *************************************************************************
 function getElementsWithUserId () {
 	const selectors = elementSelectors.map(s => s + `:not(.${REAL_NAME_CLS})`).join(',');
-	return Array.from(document.querySelectorAll(selectors));
+	const elems = Array.from(document.querySelectorAll(selectors));
+	const filtered = [];
+	elems
+		.filter(el => !!el.innerText)
+		.forEach(el => {
+			if (el.childElementCount === 0) filtered.push(el);
+			else filtered.push(...findTextElements(el));
+		});
+	return filtered;
 }
 
 function getIdsFromElements (elems) {
@@ -126,6 +135,7 @@ function replaceIdsInElements (elems, users) {
 	elems.forEach(el => {
 		let txt = el.innerText;
 		if (!txt) return;
+		if (el.classList.contains(REAL_NAME_CLS)) return;
 		for (let [id, name] of Object.entries(users)) {
 			if (txt.includes(id)) txt = txt.replace(id, name);
 			el.title = id;
@@ -226,7 +236,7 @@ function findTextElements (root) {
 		const children = node.children;
 		if (children.length === 0) {
 			const text = node.textContent?.trim() ?? '';
-			if (text.length > 0) result.push(node);
+			if (text.length > 0 && !node.classList.contains(REAL_NAME_CLS)) result.push(node);
 			continue;
 		}
 		for (let i = children.length - 1; i >= 0; i--) stack.push(children[i]);
@@ -235,9 +245,14 @@ function findTextElements (root) {
 }
 
 function getRandomisedSelectors () {
-	const avatars = document.querySelectorAll(`${APP_ROOT} [data-testid="github-avatar"]`);
+	const sel = [`${APP_ROOT} [data-testid="github-avatar"]`, `${APP_ROOT} [data-testid="avatar-link"]`];
+	const avatars = document.querySelectorAll(sel.join(','));
 	const els = [];
 	avatars.forEach(a => {
+		if (!a.childElementCount && a.innerText) {
+			els.push(a);
+			return;
+		}
 		const parent = findParentWithText(a);
 		if (!parent) return;
 		const textNodes = findTextElements(parent).filter(n => isId(n.innerText));
